@@ -145,7 +145,7 @@ exports.list = (req, res) => {
 
 
 exports.listRelated = (req, res) => {
-    let limit = req.query.limit ? parseInt(req.query.limit) : 6;
+    let limit = req.query.limit ? parseInt(req.query.limit) : 2;
 
     Product.find({ _id: { $ne: req.product }, category: req.product.category })
         .limit(limit)
@@ -182,9 +182,7 @@ exports.listBySearch = (req, res) => {
 
     for (let key in req.body.filters) {
         if (req.body.filters[key].length > 0) {
-            if (key === "price") {
-                // gte -  greater than price [0-10]
-                // lte - less than
+            if (key == "price") {
                 findArgs[key] = {
                     $gte: req.body.filters[key][0],
                     $lte: req.body.filters[key][1]
@@ -221,3 +219,28 @@ exports.photo = (req, res, next) => {
     }
     next();
 };
+
+
+exports.listSearch = (req, res) => {
+    const query = {}
+
+    if (req.query.search) {
+        query.name = { $regex: req.query.search, $options: 'i' };
+
+        if (req.query.category && req.query.category != 'All') {
+            query.category = req.query.category
+            console.log(query);
+        }
+        Product.find(query)
+            .select("-photo")
+            .exec((err, products) => {
+                if (err) {
+                    return res.status(400).json({
+                        error: errorHandler(err)
+                    })
+                }
+
+                res.json(products)
+            });
+    }
+}
